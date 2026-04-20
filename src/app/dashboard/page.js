@@ -52,6 +52,7 @@ export default function DashboardPage() {
   }
 
   function openEdit(p) {
+    console.log(p)
     setEditing(p);
     setForm({ name: p.name || "", description: p.description || "" });
     setShowModal(true);
@@ -62,10 +63,10 @@ export default function DashboardPage() {
     try {
       const payload = { ...form, name: capitalize(form.name?.trim()) };
       if (editing) {
-        const res = await api.patch(`/projects/${editing._id}`, payload);
+        const res = await api.patch(`/projects/update/${editing._id}`, payload);
         toast.success(res?.data?.message || "Project updated");
       } else {
-        const res = await api.post(`/projects`, payload);
+        const res = await api.post(`/projects/create`, payload);
         toast.success(res?.data?.message || "Project created");
       }
       setShowModal(false);
@@ -84,15 +85,24 @@ export default function DashboardPage() {
   }
 
   async function doAssign(project, emails) {
-
     try {
-      const resp = await api.post("/users/emails-to-ids", emails);
+      const resp = await api.post("/users/emails-to-ids", { emails });
       const ids = resp?.data?.userIds || [];
       const res = await api.post(`/projects/${project._id}/add-member`, { memberIds: ids });
       toast.success(res?.data?.message || "Member(s) added");
       fetchProjects();
     } catch (err) {
       toast.error(err?.response?.data?.error || "Add member failed");
+    }
+  }
+
+  async function removeAssignMember(projectId, memberId) {
+    try {
+      const res = await api.post(`/projects/${projectId}/remove-member`, { memberIds: [memberId] });
+      toast.success(res?.data?.message || "Member removed");
+      fetchProjects();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Remove member failed");
     }
   }
 
@@ -195,7 +205,12 @@ export default function DashboardPage() {
                     <div className="mb-2 font-medium">Members ({(p.members || []).length})</div>
                     <div className="flex flex-wrap gap-2">
                       {(p.members || []).slice(0,5).map((m) => (
-                        <div key={m.email} className="rounded bg-zinc-200 px-2 py-1 text-xs">{m.email}</div>
+                        <div key={m.email} className="flex items-center gap-1 rounded bg-zinc-200 px-2 py-1 text-xs">
+                            {m.email}
+                            <button type="button" onClick={() => removeAssignMember(p._id, m._id)} className="p-1">
+                                <X className="h-3 w-3" />
+                            </button>
+                        </div>
                       ))}
                       {((p.members || []).length > 5) && <div className="text-xs text-zinc-400">+{(p.members||[]).length - 5} more</div>}
                     </div>
@@ -214,8 +229,13 @@ export default function DashboardPage() {
                     </div>
                     <p className="text-sm text-zinc-500 mt-2">{p.description}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {(p.members || []).slice(0,8).map((m) => (
-                        <div key={m.email} className="rounded bg-zinc-100 px-2 py-1 text-xs">{m.email}</div>
+                      {(p.members || []).map((m) => (
+                        <div key={m.email} className="flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs">
+                            {m.email}
+                            <button type="button" onClick={() => removeAssignMember(p._id, m._id)} className="p-1">
+                                <X className="h-3 w-3" />
+                            </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -260,7 +280,7 @@ export default function DashboardPage() {
 
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded bg-white p-6">
+          <div className="w-full max-w-lg rounded bg-white p-6">
             <h3 className="mb-3 text-lg font-semibold">Add members to {assignTarget?.name}</h3>
             <form
               onSubmit={async (e) => {
