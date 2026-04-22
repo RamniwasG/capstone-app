@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import LogoutButton from "@/components/LogoutButton";
 import { User } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
+  const [user] = useState(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
 
-  useEffect(() => {
     try {
       const raw = localStorage.getItem("user");
-      if (raw) setUser(JSON.parse(raw));
-    } catch (e) {
-      setUser(null);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
     }
-  }, []);
+  });
 
   if (!user) {
     return (

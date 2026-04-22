@@ -7,86 +7,182 @@ import api from "../../lib/axios";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
+const initialFormState = {
+  values: {
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
+    phone: "",
+  },
+  errors: {
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
+    phone: "",
+  },
+};
+
 export default function Signup() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmError, setConfirmError] = useState("");
-
+  const [form, setForm] = useState(initialFormState);
   const navigate = useRouter();
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    // basic validation
-    if (!validateEmail(email)) {
-      setEmailError("Enter a valid email address");
-      return;
-    }
-    setEmailError("");
-    if (!validatePhone(phone)) {
-      setPhoneError("Enter a valid 10-digit Indian mobile number");
-      return;
-    }
-    setPhoneError("");
-    // password strength
-    if (!validatePassword(password)) {
-      setPasswordError("Password must be 8+ chars, includes atleast one upper, lower, number, special");
-      return;
-    }
-    setPasswordError("");
-
-    if (password !== confirmPassword) {
-      setConfirmError("Passwords do not match");
-      return;
-    }
-    setConfirmError("");
-
-    try {
-      const payload = { username, email, password, phone, role };
-      const res = await api.post("/auth/signup", payload);
-      toast.success(res?.data?.message || "Account created");
-        
-      // optional: redirect after signup
-      navigate.push("/");
-    } catch (err) {
-      const message = err?.response?.data?.error || err.message || "Signup failed";
-      toast.error(message);
-    }
-  }
 
   function validatePhone(value) {
     if (!value) return false;
-    // strip non-digits
     const digits = value.replace(/[^0-9]/g, "");
     let normalized = digits;
-    // handle +91 or leading 91 country code
+
     if (normalized.length === 12 && normalized.startsWith("91")) {
       normalized = normalized.slice(2);
     } else if (normalized.length === 11 && normalized.startsWith("0")) {
-      // leading 0 + 10 digits
       normalized = normalized.slice(1);
     }
-    // Indian mobile numbers: exactly 10 digits starting with 6-9
+
     return normalized.length === 10 && /^[6-9][0-9]{9}$/.test(normalized);
   }
 
   function validateEmail(value) {
     if (!value) return false;
-    // simple RFC-like check
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(value);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
   function validatePassword(value) {
-    // min 8, 1 uppercase, 1 lowercase, 1 number, 1 special
-    const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-    return re.test(value);
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(value);
+  }
+
+  function getFieldError(name, value, values) {
+    switch (name) {
+      case "username":
+        if (!value.trim()) return "Username is required";
+        if (value.trim().length < 3) return "Username must be at least 3 characters";
+        return "";
+      case "email":
+        if (!value.trim()) return "Email is required";
+        if (!validateEmail(value.trim())) return "Enter a valid email address";
+        return "";
+      case "password":
+        if (!value) return "Password is required";
+        if (!validatePassword(value)) {
+          return "Password must be 8+ chars with upper, lower, number, and special character";
+        }
+        return "";
+      case "confirmPassword":
+        if (!value) return "Confirm password is required";
+        if (value !== values.password) return "Passwords do not match";
+        return "";
+      case "role":
+        if (!value) return "Role is required";
+        return "";
+      case "phone":
+        if (!value.trim()) return "Phone number is required";
+        if (!validatePhone(value.trim())) return "Enter a valid 10-digit Indian mobile number";
+        return "";
+      default:
+        return "";
+    }
+  }
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setForm((current) => {
+      const nextValues = {
+        ...current.values,
+        [name]: value,
+      };
+
+      const nextErrors = {
+        ...current.errors,
+        [name]: current.errors[name] ? getFieldError(name, value, nextValues) : "",
+      };
+
+      if (name === "password" && current.errors.confirmPassword) {
+        nextErrors.confirmPassword = getFieldError(
+          "confirmPassword",
+          nextValues.confirmPassword,
+          nextValues
+        );
+      }
+
+      return {
+        values: nextValues,
+        errors: nextErrors,
+      };
+    });
+  }
+
+  function handleBlur(event) {
+    const { name, value } = event.target;
+
+    setForm((current) => {
+      const nextValues = {
+        ...current.values,
+        [name]: value,
+      };
+
+      const nextErrors = {
+        ...current.errors,
+        [name]: getFieldError(name, value, nextValues),
+      };
+
+      if (name === "password" && nextValues.confirmPassword) {
+        nextErrors.confirmPassword = getFieldError(
+          "confirmPassword",
+          nextValues.confirmPassword,
+          nextValues
+        );
+      }
+
+      return {
+        values: nextValues,
+        errors: nextErrors,
+      };
+    });
+  }
+
+  function validateForm() {
+    const nextErrors = Object.keys(form.values).reduce((accumulator, key) => {
+      accumulator[key] = getFieldError(key, form.values[key], form.values);
+      return accumulator;
+    }, {});
+
+    setForm((current) => ({
+      ...current,
+      errors: nextErrors,
+    }));
+
+    return Object.values(nextErrors).every((error) => !error);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      const payload = {
+        username: form.values.username.trim(),
+        email: form.values.email.trim(),
+        password: form.values.password,
+        phone: form.values.phone.trim(),
+        role: form.values.role,
+      };
+      const response = await api.post("/auth/signup", payload);
+      toast.success(response?.data?.message || "Account created");
+      navigate.push("/");
+    } catch (error) {
+      const message = error?.response?.data?.error || error.message || "Signup failed";
+      toast.error(message);
+    }
+  }
+
+  function inputBorderClass(field) {
+    return form.errors[field] ? "border-red-300" : "border-zinc-200";
   }
 
   return (
@@ -110,85 +206,87 @@ export default function Signup() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">Username</label>
-              <div className="flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-2">
+              <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${inputBorderClass("username")}`}>
                 <UserPlus className="h-5 w-5 text-zinc-400" />
                 <input
                   name="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={form.values.username}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   className="w-full bg-transparent outline-none"
                   placeholder="enter your username"
                 />
               </div>
+              {form.errors.username && (
+                <p className="mt-1 text-sm text-red-600">{form.errors.username}</p>
+              )}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">Email</label>
-              <div className="flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-2">
+              <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${inputBorderClass("email")}`}>
                 <Mail className="h-5 w-5 text-zinc-400" />
-                  <input
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={(e) => {
-                      if (e.target.value && !validateEmail(e.target.value)) setEmailError("Enter a valid email address");
-                      else setEmailError("");
-                    }}
-                    className="w-full bg-transparent outline-none"
-                    placeholder="you@company.com"
-                  />
+                <input
+                  name="email"
+                  type="email"
+                  value={form.values.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className="w-full bg-transparent outline-none"
+                  placeholder="you@company.com"
+                />
               </div>
+              {form.errors.email && <p className="mt-1 text-sm text-red-600">{form.errors.email}</p>}
             </div>
-              {emailError && <p className="mt-1 text-sm text-red-600">{emailError}</p>}
 
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">Password</label>
-              <div className="flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-2">
+              <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${inputBorderClass("password")}`}>
                 <Lock className="h-5 w-5 text-zinc-400" />
                 <input
                   name="password"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={(e) => {
-                    if (e.target.value && !validatePassword(e.target.value)) setPasswordError("Password must be 8+ chars, includes atleast one upper, lower, number, special");
-                    else setPasswordError("");
-                  }}
+                  value={form.values.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   className="w-full bg-transparent outline-none"
                   placeholder="create a password"
                 />
               </div>
-              {passwordError && <p className="mt-1 text-sm text-red-600">{passwordError}</p>}
+              {form.errors.password && (
+                <p className="mt-1 text-sm text-red-600">{form.errors.password}</p>
+              )}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700">Confirm password</label>
-              <div className={`flex items-center gap-2 rounded-md px-3 py-2 ${confirmError ? 'border border-red-300' : 'border border-zinc-200'}`}>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">
+                Confirm password
+              </label>
+              <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${inputBorderClass("confirmPassword")}`}>
                 <Lock className="h-5 w-5 text-zinc-400" />
                 <input
                   name="confirmPassword"
                   type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onBlur={(e) => {
-                    if (password && e.target.value !== password) setConfirmError("Passwords do not match");
-                    else setConfirmError("");
-                  }}
+                  value={form.values.confirmPassword}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   className="w-full bg-transparent outline-none"
                   placeholder="confirm password"
                 />
               </div>
-              {confirmError && <p className="mt-1 text-sm text-red-600">{confirmError}</p>}
+              {form.errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{form.errors.confirmPassword}</p>
+              )}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">Role</label>
-              <div className="rounded-md border border-zinc-200 px-3 py-2">
+              <div className={`rounded-md border px-3 py-2 ${inputBorderClass("role")}`}>
                 <select
                   name="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                  value={form.values.role}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   className="w-full bg-transparent outline-none"
                 >
                   <option value="">Choose role</option>
@@ -196,30 +294,32 @@ export default function Signup() {
                   <option value="admin">admin</option>
                 </select>
               </div>
+              {form.errors.role && <p className="mt-1 text-sm text-red-600">{form.errors.role}</p>}
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">Phone</label>
-              <div className={`flex items-center gap-2 rounded-md px-3 py-2 ${phoneError ? 'border border-red-300' : 'border border-zinc-200'}`}>
+              <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${inputBorderClass("phone")}`}>
                 <Phone className="h-5 w-5 text-zinc-400" />
                 <input
                   name="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onBlur={(e) => {
-                    if (e.target.value && !validatePhone(e.target.value)) setPhoneError("Enter a valid phone number with 10 digits only");
-                    else setPhoneError("");
-                  }}
+                  value={form.values.phone}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   className="w-full bg-transparent outline-none"
-                  placeholder="+91 555 555 5555"
+                  placeholder="+91 XXX XXX XXXX"
                 />
               </div>
-              {phoneError && <p className="mt-1 text-sm text-red-600">{phoneError}</p>}
+              {form.errors.phone && <p className="mt-1 text-sm text-red-600">{form.errors.phone}</p>}
             </div>
 
-            <button type="submit" className="w-full rounded-md bg-indigo-600 py-2 text-white hover:bg-indigo-700">Create account</button>
+            <button type="submit" className="w-full rounded-md bg-indigo-600 py-2 text-white hover:bg-indigo-700">
+              Create account
+            </button>
 
-            <p className="text-center text-sm text-zinc-500">Already a member? <Link href="/" className="font-medium text-indigo-600">Sign in</Link></p>
+            <p className="text-center text-sm text-zinc-500">
+              Already a member? <Link href="/signin" className="font-medium text-indigo-600">Sign in</Link>
+            </p>
           </form>
         </div>
       </div>
