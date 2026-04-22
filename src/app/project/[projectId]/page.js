@@ -15,6 +15,7 @@ import {
 import { toast } from "react-toastify";
 import { useParams, useRouter } from "next/navigation";
 import { useProjects, useProjectTasks } from "@/context/ProjectContext";
+import api from "@/lib/axios";
 
 const BOARD_COLUMNS = [
   { id: "pending", title: "Todo" },
@@ -34,10 +35,48 @@ const TASK_PRIORITY = {
   High: "high",
 };
 
+const PRIORITY_STYLES = {
+  low: "bg-emerald-50 text-emerald-700",
+  medium: "bg-amber-50 text-amber-700",
+  high: "bg-rose-50 text-rose-700",
+};
+
 
 function capitalize(value) {
   if (!value) return "";
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getAssigneeValue(assignee) {
+  if (!assignee) {
+    return "";
+  }
+
+  if (typeof assignee === "string") {
+    return assignee;
+  }
+
+  return assignee._id || assignee.email || assignee.username || assignee.name || "";
+}
+
+function getAssigneeLabel(assignee, activeMembers = []) {
+  if (!assignee) {
+    return "Unassigned";
+  }
+
+  if (typeof assignee === "string") {
+    const user = activeMembers.find(
+      (member) =>
+        member._id === assignee ||
+        member.email === assignee ||
+        member.username === assignee ||
+        member.name === assignee
+    );
+
+    return user ? user.name || user.username || user.email || assignee : assignee;
+  }
+
+  return assignee.name || assignee.username || assignee.email || assignee._id || "Unknown";
 }
 
 export default function ProjectDetailPage() {
@@ -67,6 +106,8 @@ export default function ProjectDetailPage() {
   const [draggingTaskId, setDraggingTaskId] = useState(null);
   const [activeColumn, setActiveColumn] = useState("pending");
   const [editingTask, setEditingTask] = useState(null);
+  const [activeMembers, setActiveMembers] = useState([]);
+  const [activeMembersLoading, setActiveMembersLoading] = useState(false);
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
@@ -88,6 +129,39 @@ export default function ProjectDetailPage() {
       setCurrentProject(null);
     };
   }, [fetchProjectTasks, projectId, setCurrentProject]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchActiveMembers() {
+      setActiveMembersLoading(true);
+
+      try {
+        const response = await api.get("/users/active-members");
+        const members = response?.data?.users || [];
+
+        if (!ignore) {
+          setActiveMembers(Array.isArray(members) ? members : []);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setActiveMembers([]);
+        }
+
+        toast.error(error?.response?.data?.error || "Could not load active members");
+      } finally {
+        if (!ignore) {
+          setActiveMembersLoading(false);
+        }
+      }
+    }
+
+    fetchActiveMembers();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function handleSubmitTask(event) {
     event.preventDefault();
@@ -141,12 +215,16 @@ export default function ProjectDetailPage() {
     setTaskForm({
       title: task.title || "",
       description: task.description || "",
-      assignedTo: task.assignedTo || task.assignedTo || "",
+      assignedTo: getAssigneeValue(task.assignedTo),
       priority: task.priority || "medium",
       status: task.status || "pending",
     });
     setShowTaskModal(true);
   }
+
+  const selectedAssigneeMissing =
+    taskForm.assignedTo &&
+    !activeMembers.some((member) => getAssigneeValue(member) === taskForm.assignedTo);
 
   async function handleDrop(columnId) {
     if (!draggingTaskId) {
@@ -289,9 +367,9 @@ export default function ProjectDetailPage() {
                           <GripVertical className="mt-0.5 h-4 w-4 text-zinc-400" />
                           <div>
                             <h3 className="font-medium text-zinc-900">{task.title}</h3>
-                            <p className="mt-2 text-sm leading-6 text-zinc-600">
+                            {/* <p className="mt-2 text-sm leading-6 text-zinc-600">
                               {task.description || "No description yet."}
-                            </p>
+                            </p> */}
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
@@ -313,12 +391,16 @@ export default function ProjectDetailPage() {
                       </div>
 
                       <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-zinc-600">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                            PRIORITY_STYLES[task.priority] || "bg-zinc-100 text-zinc-700"
+                          }`}
+                        >
                           {task.priority}
                         </span>
                         {task.assignedTo ? (
                           <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-                            {task?.assignedTo?.username || task.assignedTo}
+                            {getAssigneeLabel(task.assignedTo, activeMembers)}
                           </span>
                         ) : (
                           <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
@@ -377,14 +459,32 @@ export default function ProjectDetailPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-zinc-700">Assignee</label>
-                  <input
+                  <select
                     value={taskForm.assignedTo}
                     onChange={(event) =>
                       setTaskForm((current) => ({ ...current, assignedTo: event.target.value }))
                     }
                     className="w-full rounded-md border border-zinc-200 px-3 py-2 outline-none focus:border-indigo-500"
-                    placeholder="alex@example.com"
-                  />
+                    disabled={activeMembersLoading}
+                  >
+                    <option value="">
+                      {activeMembersLoading ? "Loading assignees..." : "Unassigned"}
+                    </option>
+                    {selectedAssigneeMissing && (
+                      <option value={taskForm.assignedTo}>
+                        {getAssigneeLabel(editingTask?.assignedTo || taskForm.assignedTo, activeMembers)}
+                      </option>
+                    )}
+                    {activeMembers.map((member) => {
+                      const value = getAssigneeValue(member);
+
+                      return (
+                        <option key={value} value={value}>
+                          {getAssigneeLabel(member)}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
 
                 <div>

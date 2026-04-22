@@ -37,12 +37,13 @@ function readPersistedTasks() {
 
 function normalizeTask(task, fallbackStatus = "pending") {
   const status = TASK_STATUSES.includes(task?.status) ? task.status : fallbackStatus;
+  const assignedTo = task?.assignedTo || task?.assignee || "";
 
   return {
     _id: task?._id || task?.id,
     title: task?.title || "",
     description: task?.description || "",
-    assignedTo: task?.assignedTo || "",
+    assignedTo,
     priority: task?.priority || "Medium",
     status,
   };
@@ -327,7 +328,7 @@ export function ProjectProvider({ children }) {
         type: "UPDATE_PROJECT_TASK",
         projectId,
         taskId,
-        payload: { assignee },
+        payload: { assignedTo: assignee },
       });
       toast.success("Task assignment updated locally");
       return true;
@@ -347,6 +348,7 @@ export function ProjectProvider({ children }) {
         taskId,
         payload: response?.data?.task || payload,
       });
+      await fetchProjectTasks(projectId);
       toast.success(response?.data?.message || "Task updated");
       return true;
     } catch {
@@ -354,7 +356,7 @@ export function ProjectProvider({ children }) {
       toast.success("Task updated locally");
       return true;
     }
-  }, []);
+  }, [fetchProjectTasks]);
 
   const deleteProjectTask = useCallback(async (projectId, taskId) => {
     if (!projectId || !taskId) {
