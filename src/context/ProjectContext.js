@@ -66,6 +66,16 @@ function projectReducer(state, action) {
         projects: action.payload,
         error: null,
       };
+    case "DELETE_PROJECT":
+      return {
+        ...state,
+        projects: state.projects.filter((project) => project._id !== action.projectId),
+        currentProjectId:
+          state.currentProjectId === action.projectId ? null : state.currentProjectId,
+        tasksByProject: Object.fromEntries(
+          Object.entries(state.tasksByProject).filter(([key]) => key !== action.projectId)
+        ),
+      };
     case "SET_ERROR":
       return {
         ...state,
@@ -211,6 +221,22 @@ export function ProjectProvider({ children }) {
     },
     [fetchProjects]
   );
+
+  const deleteProject = useCallback(async (projectId) => {
+    if (!projectId) {
+      return false;
+    }
+
+    try {
+      const response = await api.delete(`/projects/delete/${projectId}`);
+      dispatch({ type: "DELETE_PROJECT", projectId });
+      toast.success(response?.data?.message || "Project deleted");
+      return true;
+    } catch (error) {
+      toast.error(error?.response?.data?.error || "Delete project failed");
+      return false;
+    }
+  }, []);
 
   const addMembersToProject = useCallback(
     async (projectId, emails) => {
@@ -392,6 +418,7 @@ export function ProjectProvider({ children }) {
       hydrateUser,
       fetchProjects,
       saveProject,
+      deleteProject,
       addMembersToProject,
       removeProjectMembers,
       fetchProjectTasks,
@@ -409,6 +436,7 @@ export function ProjectProvider({ children }) {
       hydrateUser,
       fetchProjects,
       saveProject,
+      deleteProject,
       addMembersToProject,
       removeProjectMembers,
       fetchProjectTasks,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   CircleUserRound,
+  FolderX,
   FilePenLine,
   GripVertical,
   LogOut,
@@ -47,6 +48,7 @@ export default function ProjectDetailPage() {
     currentProject,
     hydrateUser,
     fetchProjects,
+    deleteProject,
     setCurrentProject,
     logout,
   } = useProjects();
@@ -155,6 +157,25 @@ export default function ProjectDetailPage() {
     setDraggingTaskId(null);
   }
 
+  async function handleDeleteProject() {
+    if (!currentProject) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${currentProject.name}"? This will remove the project and its board access.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const success = await deleteProject(currentProject._id);
+    if (success) {
+      router.push("/dashboard");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50">
       <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
@@ -198,6 +219,12 @@ export default function ProjectDetailPage() {
                 onClick={() => router.push("/settings")}
               >
                 <Settings className="h-4 w-4" /> Settings
+              </button>
+              <button
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"
+                onClick={handleDeleteProject}
+              >
+                <FolderX className="h-4 w-4" /> Delete project
               </button>
               <button
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-50"
