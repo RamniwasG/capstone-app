@@ -91,6 +91,7 @@ export default function ProjectDetailPage() {
     setCurrentProject,
     logout,
   } = useProjects();
+  const isAdmin = user?.role === "admin";
   const {
     columns,
     loading,
@@ -134,6 +135,14 @@ export default function ProjectDetailPage() {
     let ignore = false;
 
     async function fetchActiveMembers() {
+      if (!isAdmin) {
+        if (!ignore) {
+          setActiveMembers(Array.isArray(currentProject?.members) ? currentProject.members : []);
+          setActiveMembersLoading(false);
+        }
+        return;
+      }
+
       setActiveMembersLoading(true);
 
       try {
@@ -161,7 +170,7 @@ export default function ProjectDetailPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [currentProject, isAdmin]);
 
   async function handleSubmitTask(event) {
     event.preventDefault();
@@ -241,7 +250,7 @@ export default function ProjectDetailPage() {
   }
 
   async function handleDeleteProject() {
-    if (!currentProject) {
+    if (!currentProject || !isAdmin) {
       return;
     }
 
@@ -270,12 +279,14 @@ export default function ProjectDetailPage() {
         </div>
 
         <div className="relative flex items-center gap-4">
-          <button
-            onClick={() => openTaskModal("pending")}
-            className="inline-flex items-center gap-2 rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          >
-            <Plus className="h-4 w-4" /> Create task
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => openTaskModal("pending")}
+              className="inline-flex items-center gap-2 rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              <Plus className="h-4 w-4" /> Create task
+            </button>
+          )}
 
           <button
             onClick={() => setShowMenu((open) => !open)}
@@ -303,12 +314,14 @@ export default function ProjectDetailPage() {
               >
                 <Settings className="h-4 w-4" /> Settings
               </button>
-              <button
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"
-                onClick={handleDeleteProject}
-              >
-                <FolderX className="h-4 w-4" /> Delete project
-              </button>
+              {isAdmin && (
+                <button
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"
+                  onClick={handleDeleteProject}
+                >
+                  <FolderX className="h-4 w-4" /> Delete project
+                </button>
+              )}
               <button
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-50"
                 onClick={logout}
@@ -350,7 +363,7 @@ export default function ProjectDetailPage() {
                         {sentence}
                       </p>
                     ))}
-                    {column.id === "pending" && (
+                    {isAdmin && column.id === "pending" && (
                     <button
                       onClick={() => openTaskModal(column.id)}
                       className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
@@ -368,7 +381,7 @@ export default function ProjectDetailPage() {
                       className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-center gap-2">
                           <GripVertical className="mt-0.5 h-4 w-4 text-zinc-400" />
                           <div>
                             <h3 className="font-medium text-zinc-900">{task.title}</h3>
@@ -385,13 +398,15 @@ export default function ProjectDetailPage() {
                           >
                             <FilePenLine className="h-4 w-4" />
                           </button>
-                          <button
-                            onClick={() => deleteProjectTask(projectId, task._id)}
-                            className="rounded p-1 text-zinc-400 hover:bg-white hover:text-rose-600"
-                            aria-label={`Delete ${task.title}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => deleteProjectTask(projectId, task._id)}
+                              className="rounded p-1 text-zinc-400 hover:bg-white hover:text-rose-600"
+                              aria-label={`Delete ${task.title}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
 

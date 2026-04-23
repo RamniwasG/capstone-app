@@ -14,6 +14,8 @@ function createInitialState() {
   return {
     user: null,
     projects: [],
+    users: [],
+    usersLoading: false,
     loading: false,
     error: null,
     currentProjectId: null,
@@ -35,6 +37,23 @@ function readPersistedTasks() {
   }
 }
 
+function readStoredUser() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const rawUser = localStorage.getItem("user");
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function isStoredAdmin() {
+  return readStoredUser()?.role === "admin";
+}
+
 function normalizeTask(task, fallbackStatus = "pending") {
   const status = TASK_STATUSES.includes(task?.status) ? task.status : fallbackStatus;
   const assignedTo = task?.assignedTo || task?.assignee || "";
@@ -47,6 +66,33 @@ function normalizeTask(task, fallbackStatus = "pending") {
     priority: task?.priority || "Medium",
     status,
   };
+}
+
+function extractUsersList(data) {
+  if (Array.isArray(data?.users)) return data.users;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.members)) return data.members;
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
+async function runFallbackRequests(requests) {
+  let lastError = null;
+
+  for (const request of requests) {
+    try {
+      return await request();
+    } catch (error) {
+      lastError = error;
+      const status = error?.response?.status;
+
+      if (status && status !== 404 && status !== 405) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error("Request failed");
 }
 
 function projectReducer(state, action) {
@@ -66,6 +112,17 @@ function projectReducer(state, action) {
         ...state,
         projects: action.payload,
         error: null,
+      };
+    case "SET_USERS":
+      return {
+        ...state,
+        users: action.payload,
+        error: null,
+      };
+    case "SET_USERS_LOADING":
+      return {
+        ...state,
+        usersLoading: action.payload,
       };
     case "DELETE_PROJECT":
       return {
@@ -169,10 +226,9 @@ export function ProjectProvider({ children }) {
 
   const hydrateUser = useCallback(() => {
     try {
-      const rawUser = localStorage.getItem("user");
       dispatch({
         type: "SET_USER",
-        payload: rawUser ? JSON.parse(rawUser) : null,
+        payload: readStoredUser(),
       });
     } catch (error) {
       toast.error(error?.response?.data?.error || "Remove member failed");
@@ -189,7 +245,13 @@ export function ProjectProvider({ children }) {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      const response = await api.get("/projects/getAll");
+      const currentUser = readStoredUser();
+      const projectsEndpoint =
+        currentUser?.role === "admin"
+          ? "/projects/getAll"
+          : "/projects/getMemberProjects";
+
+      const response = await api.get(projectsEndpoint);
       const projects = response?.data?.projects || [];
       dispatch({ type: "SET_PROJECTS", payload: projects });
       return projects;
@@ -200,6 +262,34 @@ export function ProjectProvider({ children }) {
       return [];
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
+    }
+  }, []);
+
+  const fetchUsers = useCallback(async () => {
+    if (!getToken()) {
+      dispatch({ type: "SET_USERS", payload: [] });
+      return [];
+    }
+
+    dispatch({ type: "SET_USERS_LOADING", payload: true });
+
+    try {
+      const response = await runFallbackRequests([
+        () => api.get("/users/all-members"),
+        () => api.get("/users"),
+        () => api.get("/users/all"),
+        () => api.get("/users/admin/all"),
+      ]);
+      const users = extractUsersList(response?.data);
+      dispatch({ type: "SET_USERS", payload: users });
+      return users;
+    } catch (error) {
+      const message = error?.response?.data?.error || "Could not load users";
+      dispatch({ type: "SET_ERROR", payload: message });
+      toast.error(message);
+      return [];
+    } finally {
+      dispatch({ type: "SET_USERS_LOADING", payload: false });
     }
   }, []);
 
@@ -229,6 +319,11 @@ export function ProjectProvider({ children }) {
       return false;
     }
 
+    if (!isStoredAdmin()) {
+      toast.error("Only admin can delete projects");
+      return false;
+    }
+
     try {
       const response = await api.delete(`/projects/delete/${projectId}`);
       dispatch({ type: "DELETE_PROJECT", projectId });
@@ -239,6 +334,65 @@ export function ProjectProvider({ children }) {
       return false;
     }
   }, []);
+
+  const updateUser = useCallback(
+    async (userId, payload) => {
+      if (!userId) {
+        return false;
+      }
+
+      try {
+        const response = await runFallbackRequests([
+          () => api.patch(`/users/update/${userId}/status`, payload),
+          () => api.put(`/users/update/${userId}`, payload),
+          () => api.patch(`/users/${userId}`, payload),
+          () => api.put(`/users/${userId}`, payload),
+        ]);
+        toast.success(response?.data?.message || "User updated");
+        await fetchUsers();
+        return true;
+      } catch (error) {
+        toast.error(error?.response?.data?.error || "Update user failed");
+        return false;
+      }
+    },
+    [fetchUsers]
+  );
+
+  const approveUser = useCallback(
+    async (userId, payload = {}) => {
+      if (!userId) {
+        return false;
+      }
+
+      const approvalPayloads = [
+        payload,
+        { status: "active" },
+      ].filter((entry) => Object.keys(entry).length > 0);
+
+      try {
+        let response = null;
+
+        for (const currentPayload of approvalPayloads) {
+          response = await runFallbackRequests([
+            () => api.patch(`/users/update/${userId}/status`, currentPayload),
+          ]);
+
+          if (response) {
+            break;
+          }
+        }
+
+        toast.success(response?.data?.message || "User approved");
+        await fetchUsers();
+        return true;
+      } catch (error) {
+        toast.error(error?.response?.data?.error || "Approve user failed");
+        return false;
+      }
+    },
+    [fetchUsers]
+  );
 
   const addMembersToProject = useCallback(
     async (projectId, emails) => {
@@ -259,6 +413,11 @@ export function ProjectProvider({ children }) {
 
   const removeProjectMembers = useCallback(
     async (projectId, memberIds) => {
+      if (!isStoredAdmin()) {
+        toast.error("Only admin can remove members from a project");
+        return false;
+      }
+
       try {
         const response = await api.post(`/projects/${projectId}/remove-member`, { memberIds });
         toast.success(response?.data?.message || "Member removed");
@@ -363,6 +522,11 @@ export function ProjectProvider({ children }) {
       return false;
     }
 
+    if (!isStoredAdmin()) {
+      toast.error("Only admin can delete tasks");
+      return false;
+    }
+
     try {
       const response = await api.delete(`/tasks/delete/${taskId}`);
       dispatch({ type: "DELETE_PROJECT_TASK", projectId, taskId });
@@ -419,8 +583,11 @@ export function ProjectProvider({ children }) {
       currentProject,
       hydrateUser,
       fetchProjects,
+      fetchUsers,
       saveProject,
       deleteProject,
+      updateUser,
+      approveUser,
       addMembersToProject,
       removeProjectMembers,
       fetchProjectTasks,
@@ -437,8 +604,11 @@ export function ProjectProvider({ children }) {
       currentProject,
       hydrateUser,
       fetchProjects,
+      fetchUsers,
       saveProject,
       deleteProject,
+      updateUser,
+      approveUser,
       addMembersToProject,
       removeProjectMembers,
       fetchProjectTasks,
