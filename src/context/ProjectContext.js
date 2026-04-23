@@ -174,7 +174,8 @@ export function ProjectProvider({ children }) {
         type: "SET_USER",
         payload: rawUser ? JSON.parse(rawUser) : null,
       });
-    } catch {
+    } catch (error) {
+      toast.error(error?.response?.data?.error || "Remove member failed");
       dispatch({ type: "SET_USER", payload: null });
     }
   }, []);
@@ -275,15 +276,14 @@ export function ProjectProvider({ children }) {
     if (!projectId) {
       return [];
     }
-
     dispatch({ type: "SET_TASKS_LOADING", projectId, payload: true });
-
     try {
       const response = await api.get(`/tasks/${projectId}`);
       const tasks = response?.data?.tasks || [];
       dispatch({ type: "SET_PROJECT_TASKS", projectId, payload: tasks });
       return tasks;
-    } catch {
+    } catch (error) {
+      toast.error(error?.response?.data?.error || "fetch project tasks failed");
       return [];
     } finally {
       dispatch({ type: "SET_TASKS_LOADING", projectId, payload: false });
@@ -301,10 +301,10 @@ export function ProjectProvider({ children }) {
       dispatch({ type: "ADD_PROJECT_TASK", projectId, payload: createdTask });
       toast.success(response?.data?.message || "Task created");
       return true;
-    } catch {
+    } catch (error) {
       dispatch({ type: "ADD_PROJECT_TASK", projectId, payload });
-      toast.success("Task created locally");
-      return true;
+      toast.error(error?.response?.data?.error || "Create task failed");
+      return false;
     }
   }, []);
 
@@ -323,15 +323,15 @@ export function ProjectProvider({ children }) {
       });
       toast.success(response?.data?.message || "Task assigned");
       return true;
-    } catch {
+    } catch (error) {
       dispatch({
         type: "UPDATE_PROJECT_TASK",
         projectId,
         taskId,
         payload: { assignedTo: assignee },
       });
-      toast.success("Task assignment updated locally");
-      return true;
+      toast.error(error?.response?.data?.error || "Assign task failed");
+      return false;
     }
   }, []);
 
@@ -351,10 +351,10 @@ export function ProjectProvider({ children }) {
       await fetchProjectTasks(projectId);
       toast.success(response?.data?.message || "Task updated");
       return true;
-    } catch {
+    } catch (error) {
       dispatch({ type: "UPDATE_PROJECT_TASK", projectId, taskId, payload });
-      toast.success("Task updated locally");
-      return true;
+      toast.error(error?.response?.data?.error || "Update task failed");
+      return false;
     }
   }, [fetchProjectTasks]);
 
@@ -368,10 +368,10 @@ export function ProjectProvider({ children }) {
       dispatch({ type: "DELETE_PROJECT_TASK", projectId, taskId });
       toast.success(response?.data?.message || "Task deleted");
       return true;
-    } catch {
+    } catch (error) {
       dispatch({ type: "DELETE_PROJECT_TASK", projectId, taskId });
-      toast.success("Task deleted locally");
-      return true;
+      toast.error(error?.response?.data?.error || "Delete task failed");
+      return false;
     }
   }, []);
 
@@ -389,15 +389,15 @@ export function ProjectProvider({ children }) {
         payload: response?.data?.task || { status },
       });
       return true;
-    } catch {
+    } catch (error) {
       dispatch({
         type: "UPDATE_PROJECT_TASK",
         projectId,
         taskId,
         payload: { status },
       });
-      toast.success("Task status updated locally");
-      return true;
+      toast.error(error?.response?.data?.error || "Update task status failed");
+      return false;
     }
   }, []);
 

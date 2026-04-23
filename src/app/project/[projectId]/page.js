@@ -171,6 +171,11 @@ export default function ProjectDetailPage() {
       return;
     }
 
+    if(!taskForm.assignedTo.trim()) {
+      toast.error("Please choose assignee for the task");
+      return;
+    }
+
     const payload = {
       title: taskForm.title.trim(),
       description: taskForm.description.trim(),
@@ -477,7 +482,6 @@ export default function ProjectDetailPage() {
                     )}
                     {activeMembers.map((member) => {
                       const value = getAssigneeValue(member);
-
                       return (
                         <option key={value} value={value}>
                           {getAssigneeLabel(member)}
@@ -512,13 +516,13 @@ export default function ProjectDetailPage() {
                     setShowTaskModal(false);
                     setEditingTask(null);
                   }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-red-400 hover:bg-red-500 hover:cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 hover:cursor-pointer"
                 >
                   {editingTask ? "Save changes" : "Create task"}
                 </button>
