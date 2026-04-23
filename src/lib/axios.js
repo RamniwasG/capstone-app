@@ -6,7 +6,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  // withCredentials: true,
 });
 
 // Attach Authorization header from localStorage (if token exists) and
