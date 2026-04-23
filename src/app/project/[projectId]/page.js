@@ -137,7 +137,7 @@ export default function ProjectDetailPage() {
       setActiveMembersLoading(true);
 
       try {
-        const response = await api.get("/users/active-members");
+        const response = await api.get("/users/all-members");
         const members = response?.data?.users || [];
 
         if (!ignore) {
