@@ -810,12 +810,13 @@ export default function DashboardPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium">Email</label>
                 <input
+                  disabled
                   type="email"
                   value={userForm.email}
                   onChange={(event) =>
                     setUserForm((current) => ({ ...current, email: event.target.value }))
                   }
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2"
+                  className="w-full rounded-xl border border-zinc-200 px-3 py-2 hover:bg-zinc-50 cursor-not-allowed bg-zinc-100 text-zinc-500"
                 />
               </div>
               <div>
@@ -831,11 +832,12 @@ export default function DashboardPage() {
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium">Role</label>
                 <select
+                  disabled
                   value={userForm.role}
                   onChange={(event) =>
                     setUserForm((current) => ({ ...current, role: event.target.value }))
                   }
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2"
+                  className="w-full rounded-xl border border-zinc-200 px-3 py-2 hover:bg-zinc-50 cursor-not-allowed bg-zinc-100 text-zinc-500"
                 >
                   <option value="member">member</option>
                   <option value="admin">admin</option>

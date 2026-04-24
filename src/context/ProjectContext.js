@@ -343,10 +343,7 @@ export function ProjectProvider({ children }) {
 
       try {
         const response = await runFallbackRequests([
-          () => api.patch(`/users/update/${userId}/status`, payload),
-          () => api.put(`/users/update/${userId}`, payload),
-          () => api.patch(`/users/${userId}`, payload),
-          () => api.put(`/users/${userId}`, payload),
+          () => api.put(`/users/update/${userId}/profile`, payload),
         ]);
         toast.success(response?.data?.message || "User updated");
         await fetchUsers();
