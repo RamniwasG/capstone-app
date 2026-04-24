@@ -404,7 +404,7 @@ export default function ProjectDetailPage() {
                           >
                             <FilePenLine className="h-4 w-4" />
                           </button>
-                          {isAdmin && (
+                          {isAdmin && task.status !== 'completed' && (
                             <button
                               onClick={() => deleteProjectTask(projectId, task._id)}
                               className="rounded p-1 text-zinc-400 hover:bg-white hover:text-rose-600"
