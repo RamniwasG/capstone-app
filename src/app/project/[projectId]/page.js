@@ -7,6 +7,7 @@ import {
   FilePenLine,
   GripVertical,
   LogOut,
+  MoveLeftIcon,
   Plus,
   Settings,
   Trash2,
@@ -16,6 +17,7 @@ import { toast } from "react-toastify";
 import { useParams, useRouter } from "next/navigation";
 import { useProjects, useProjectTasks } from "@/context/ProjectContext";
 import api from "@/lib/axios";
+import Link from "next/link";
 
 const BOARD_COLUMNS = [
   { id: "pending", title: "Todo" },
@@ -238,7 +240,7 @@ export default function ProjectDetailPage() {
 
   const selectedAssigneeMissing =
     taskForm.assignedTo &&
-    !activeMembers.some((member) => getAssigneeValue(member) === taskForm.assignedTo);
+    !currentProject?.members?.some((member) => getAssigneeValue(member) === taskForm.assignedTo);
 
   async function handleDrop(columnId) {
     if (!draggingTaskId) {
@@ -271,13 +273,17 @@ export default function ProjectDetailPage() {
   return (
     <div className="min-h-screen bg-zinc-50">
       <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">Project board</p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
-            {currentProject ? capitalize(currentProject.name) : "Project details"}
-          </h1>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 rounded px-3 py-2 hover:bg-zinc-100">
+            <MoveLeftIcon className="h4 w-4 text-blue-500" /> Back
+          </Link>
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-zinc-400">Project board</p>
+            <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
+              {currentProject ? capitalize(currentProject.name) : "Project details"}
+            </h1>
+          </div>
         </div>
-
         <div className="relative flex items-center gap-4">
           {isAdmin && (
             <button
@@ -487,7 +493,7 @@ export default function ProjectDetailPage() {
                     className="w-full rounded-md border border-zinc-200 px-3 py-2 outline-none focus:border-indigo-500"
                     disabled={activeMembersLoading}
                   >
-                    <option value="">
+                    <option value="" disabled>
                       {activeMembersLoading ? "Loading assignees..." : "Unassigned"}
                     </option>
                     {selectedAssigneeMissing && (
@@ -495,7 +501,7 @@ export default function ProjectDetailPage() {
                         {getAssigneeLabel(editingTask?.assignedTo || taskForm.assignedTo, activeMembers)}
                       </option>
                     )}
-                    {activeMembers.map((member) => {
+                    {currentProject?.members?.map((member) => {
                       const value = getAssigneeValue(member);
                       return (
                         <option key={value} value={value}>

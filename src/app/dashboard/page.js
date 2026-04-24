@@ -264,7 +264,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
+          {isAdmin && <button
             onClick={() => {
               if (currentTab === "projects") {
                 openCreateProject();
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                 <RefreshCcw className="h-4 w-4" /> Refresh users
               </>
             )}
-          </button>
+          </button>}
 
           <div className="relative">
             <button
@@ -803,16 +803,6 @@ export default function DashboardPage() {
                   value={userForm.username}
                   onChange={(event) =>
                     setUserForm((current) => ({ ...current, username: event.target.value }))
-                  }
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Name</label>
-                <input
-                  value={userForm.name}
-                  onChange={(event) =>
-                    setUserForm((current) => ({ ...current, name: event.target.value }))
                   }
                   className="w-full rounded-xl border border-zinc-200 px-3 py-2"
                 />
