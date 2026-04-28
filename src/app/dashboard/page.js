@@ -420,28 +420,30 @@ export default function DashboardPage() {
                           <p className="mt-1 text-sm text-zinc-500">{project.description}</p>
                         </div>
                         <div className="flex items-center gap-1" onClick={stopCardClick}>
-                          <button
-                            onClick={() => openEditProject(project)}
-                            className="cursor-pointer rounded-lg p-2 hover:bg-white"
-                            title="Edit project"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => openAssign(project)}
-                            className="cursor-pointer rounded-lg p-2 hover:bg-white"
-                            title="Assign members"
-                          >
-                            <UserPlus className="h-4 w-4" />
-                          </button>
                           {isAdmin && (
-                            <button
-                              onClick={(event) => handleDeleteProject(project, event)}
-                              className="cursor-pointer rounded-lg p-2 text-rose-600 hover:bg-rose-50"
-                              title="Delete project"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => openEditProject(project)}
+                                className="cursor-pointer rounded-lg p-2 hover:bg-white"
+                                title="Edit project"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => openAssign(project)}
+                                className="cursor-pointer rounded-lg p-2 hover:bg-white"
+                                title="Assign members"
+                              >
+                                <UserPlus className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={(event) => handleDeleteProject(project, event)}
+                                className="cursor-pointer rounded-lg p-2 text-rose-600 hover:bg-rose-50"
+                                title="Delete project"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -521,28 +523,30 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 md:ml-4" onClick={stopCardClick}>
-                        <button
-                          onClick={() => openEditProject(project)}
-                          className="cursor-pointer rounded-lg p-2 hover:bg-white"
-                          title="Edit project"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => openAssign(project)}
-                          className="cursor-pointer rounded-lg p-2 hover:bg-white"
-                          title="Assign members"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                        </button>
                         {isAdmin && (
-                          <button
-                            onClick={(event) => handleDeleteProject(project, event)}
-                            className="cursor-pointer rounded-lg p-2 text-rose-600 hover:bg-rose-50"
-                            title="Delete project"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => openEditProject(project)}
+                              className="cursor-pointer rounded-lg p-2 hover:bg-white"
+                              title="Edit project"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => openAssign(project)}
+                              className="cursor-pointer rounded-lg p-2 hover:bg-white"
+                              title="Assign members"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={(event) => handleDeleteProject(project, event)}
+                              className="cursor-pointer rounded-lg p-2 text-rose-600 hover:bg-rose-50"
+                              title="Delete project"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>

@@ -403,13 +403,15 @@ export default function ProjectDetailPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openEditTaskModal(task)}
-                            className="rounded p-1 text-zinc-400 hover:bg-white hover:text-zinc-700"
-                            aria-label={`Edit ${task.title}`}
-                          >
-                            <FilePenLine className="h-4 w-4" />
-                          </button>
+                          { task.status !== 'completed' && (
+                            <button
+                              onClick={() => openEditTaskModal(task)}
+                              className="rounded p-1 text-zinc-400 hover:bg-white hover:text-zinc-700"
+                              aria-label={`Edit ${task.title}`}
+                            >
+                              <FilePenLine className="h-4 w-4" />
+                            </button>
+                          )}
                           {isAdmin && task.status !== 'completed' && (
                             <button
                               onClick={() => deleteProjectTask(projectId, task._id)}
