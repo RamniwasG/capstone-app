@@ -625,7 +625,7 @@ export default function DashboardPage() {
                                     : "bg-amber-50 text-amber-700"
                                 }`}
                               >
-                                {isApproved ? "Approved" : "Pending"}
+                                {isApproved ? "Active" : "Pending"}
                               </span>
                             </td>
                             <td className="py-4 text-right">
