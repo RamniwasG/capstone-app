@@ -77,7 +77,7 @@ function SidebarButton({ active, icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition ${
+      className={`flex w-full items-center gap-3 rounded-md px-4 py-3 text-left text-sm font-medium transition ${
         active
           ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
           : "text-zinc-600 hover:bg-zinc-100"
@@ -272,7 +272,7 @@ export default function DashboardPage() {
               }
               fetchUsers();
             }}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
             {currentTab === "projects" ? (
               <>
@@ -582,7 +582,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={fetchUsers}
-                    className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50"
                   >
                     <RefreshCcw className="h-4 w-4" /> Refresh
                   </button>
@@ -634,7 +634,7 @@ export default function DashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleApproveUser(userItem)}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700"
+                                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700"
                                   >
                                     <CheckCircle2 className="h-4 w-4" /> Approve
                                   </button>
@@ -642,7 +642,7 @@ export default function DashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => openEditUser(userItem)}
-                                  className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50"
+                                  className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50"
                                 >
                                   <Edit className="h-4 w-4" /> Edit
                                 </button>
@@ -701,7 +701,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-indigo-600 px-3 py-2 text-white"
+                  className="rounded-md bg-indigo-600 px-3 py-2 text-white"
                 >
                   {editingProject ? "Save changes" : "Create project"}
                 </button>
@@ -783,7 +783,7 @@ export default function DashboardPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="rounded-xl bg-indigo-600 px-3 py-2 text-white">
+                <button type="submit" className="rounded-md bg-indigo-600 px-3 py-2 text-white">
                   Add members
                 </button>
               </div>
@@ -852,7 +852,7 @@ export default function DashboardPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="rounded-xl bg-indigo-600 px-3 py-2 text-white">
+                <button type="submit" className="rounded-md bg-indigo-600 px-3 py-2 text-white">
                   Save user
                 </button>
               </div>

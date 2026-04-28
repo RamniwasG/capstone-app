@@ -43,6 +43,12 @@ const PRIORITY_STYLES = {
   high: "bg-rose-50 text-rose-700",
 };
 
+const STATUS_STYLES = {
+  pending: "bg-white",
+  "in-progress": "bg-amber-50",
+  completed: "bg-emerald-50",
+};
+
 
 function capitalize(value) {
   if (!value) return "";
@@ -384,7 +390,7 @@ export default function ProjectDetailPage() {
                       draggable
                       onDragStart={() => setDraggingTaskId(task._id)}
                       onDragEnd={() => setDraggingTaskId(null)}
-                      className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm"
+                      className={`rounded-xl border border-zinc-200 ${STATUS_STYLES[task.status] || 'bg-zinc-50'} p-4 shadow-sm`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
